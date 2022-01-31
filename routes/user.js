@@ -107,6 +107,7 @@ router.post('/:id/address', async (req, res) => {
 
 router.post('/search', async (req, res) => {
     const criteria = req.body.criteria;
+    const requesterUserId = req.body.userId;
     var users;
     try{
         if(criteria == null) {
@@ -118,7 +119,8 @@ router.post('/search', async (req, res) => {
                 $or: [
                     { name: { $regex: `.*${criteria}.*`, $options: "i" } },
                     { nickname: { $regex: `.*${criteria}.*`, $options: "i" } }
-                ]
+                ],
+                _id: { $ne: requesterUserId }
              })
              .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "googleId": 0, "__v": 0 })
              .limit(10);
