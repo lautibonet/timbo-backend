@@ -5,13 +5,14 @@ const userModel = require('../models/User');
 const friendModel = require('../models/Friend');
 const catchObjectIdError = require('../utils/catchObjectIdError');
 
-const schemaMatch = joi.object({
+const schemaCreateMatch = joi.object({
     organizer: joi.string().required(),
-    name: joi.string().required(),
-    startTime: joi.string().isoDate().required(),
-    fullAddress: joi.string().required(),
-    latitude: joi.number().required(),
-    longitude: joi.number().required(),
+    name: joi.string().allow(null, ''),
+    createdOn: joi.string().isoDate().required(),
+    startTime: joi.string().isoDate().allow(null),
+    fullAddress: joi.string().allow(null),
+    latitude: joi.number().allow(null),
+    longitude: joi.number().allow(null),
     status: joi.number().allow(0,1,2).required(),
     totalPlayers: joi.number().min(0).required(),
     privacy: joi.number().allow(1,2,3).required(),
@@ -27,15 +28,20 @@ const schemaSearch = joi.object({
 })
 
 const buildMatch = (body) => {
+    var location;
+    if(body.fullAddress != null && body.fullAddress != ''){
+        location = {
+            type: "Point",
+            coordinates: [body.longitude, body.latitude]
+        };
+    }
     return {
         organizer: body.organizer,
         name: body.name,
+        createdOn: body.createdOn,
         startTime: body.startTime,
         fullAddress: body.fullAddress,
-        location: {
-            type: "Point",
-            coordinates: [body.longitude, body.latitude]
-        },
+        location: location,
         status: body.status,
         totalPlayers: body.totalPlayers,
         privacy: body.privacy,
@@ -45,8 +51,11 @@ const buildMatch = (body) => {
 }
 
 router.post('/', async (req, res) => {
-    const {error} = schemaMatch.validate(req.body);
-    if(error) return res.status(400).json({ error: error.details[0].message })
+    const {error} = schemaCreateMatch.validate(req.body);
+    if(error) {
+        console.log('validation error: ', error);
+        return res.status(400).json({ error: error.details[0].message })
+    }
     try{
         const user = await userModel.findById(req.body.organizer);
         if(user == null) return res.status(400).json({ error: "user_not_found" })

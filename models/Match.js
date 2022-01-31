@@ -5,31 +5,18 @@ const matchSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    name: {
-        type: String,
-        required: true
-    },
+    name: String,
     createdOn: {
         type: Date,
         required: true
     },
-    startTime: {
-        type: Date,
-        required: true
-    },
-    fullAddress: {
-        type: String,
-        required: true
-    },
+    startTime: Date,
+    fullAddress: String,
     location: {
-        type: {
-            type: String,
-            enum: ['Point'],
-            required: true
-        },
+        type: String,
         coordinates: {
-            type: [Number],
-            required: true
+            type: [],
+            default: undefined
         }
     },
     status: {

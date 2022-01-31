@@ -13,7 +13,7 @@ const schemaRegister = joi.object({
     password: joi.string().min(8).max(1024).required(),
     enabled: joi.boolean(),
     phoneNumber: joi.string().allow(null).allow(''),
-    facebookId: joi.string().allow(null),
+    googleId: joi.string().allow(null),
     imageUrl: joi.string().allow(null),
     birthday: joi.string().isoDate().allow(null)
 })
@@ -31,7 +31,7 @@ const buildUser = (body) => {
         password: body.password,
         enabled: true,
         phoneNumber: body.phoneNumber,
-        facebookId: body.facebookId,
+        googleId: body.googleId,
         imageUrl: body.imageUrl,
         birthday: body.birthday
     }
@@ -108,10 +108,12 @@ router.post('/token', async (req, res) => {
     })
 })
 
-router.post('/login/fb', async (req, res) => {
-    const facebookId = req.body.id;
-    if(facebookId == null) return res.status(400).json({ error: "facebook_id_required" })
-    const user = await userModel.findOne({ facebookId });
+router.post('/login/google', async (req, res) => {
+    const googleId = req.body.id;
+    const email = req.body.email;
+    if(googleId == null) return res.status(400).json({ error: "google_id_required" })
+    if(email == null) return res.status(400).json({ error: "email_required" })
+    const user = await userModel.findOne({ googleId, email });
     if(user == null) return res.status(400).json({ error: "user_not_found" })
     const accessToken = buildAccessToken(user);
     const refreshToken = buildRefreshToken(user);

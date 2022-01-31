@@ -35,19 +35,44 @@ router.get('/:id', async (req, res) => {
     }
 })
 
+router.put('/:googleId/imageUrl', async (req, res) => {
+    if(req.params.googleId == null) return res.status(400).json({error: 'googleId_required'})
+    if(req.body.imageUrl == null) return res.status(400).json({error: 'imageUrl_required'})
+    try{
+        const user = await userModel.findOne({ googleId: req.params.googleId });
+        if(!user) res.status(404).json({ message: 'user_not_found' })
+        user.imageUrl = req.body.imageUrl;
+        const savedUser = await user.save();
+        res.json({ data: {user:savedUser} });
+    } catch (error) {
+        catchObjectIdError(error, 
+            () => res.status(404).json({ message: 'user_not_found' }) , 
+            () => res.status(500).json({ error })
+        );
+    }
+})
+
 router.patch('/:id', async (req, res) => {
     if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
     try{
         const user = await userModel.findById(req.params.id);
-        if(req.body.name != null) user.name = req.body.name
-        if(req.body.nickname != null) user.nickname = req.body.nickname
-        if(req.body.email != null) user.email = req.body.email
-        if(req.body.enabled != null) user.enabled = req.body.enabled
-        if(req.body.phoneNumber != null) user.phoneNumber = req.body.phoneNumber
+        console.log(req.body);
+        if(req.body.name != null && req.body.name != user.name) user.name = req.body.name
+        if(req.body.nickname != null && req.body.nickname != user.nickname) user.nickname = req.body.nickname
+        if(req.body.birthday != null && req.body.birthday != user.birthday) user.birthday = req.body.birthday
+        if(req.body.imageUrl != null && req.body.imageUrl != user.imageUrl) user.imageUrl = req.body.imageUrl
+        if(req.body.email != null && req.body.email != user.email) user.email = req.body.email
+        if(req.body.enabled != null && req.body.enabled != user.enabled) user.enabled = req.body.enabled
+        if(req.body.phoneNumber != null && req.body.phoneNumber != user.phoneNumber) user.phoneNumber = req.body.phoneNumber
         if(req.body.attributes != null) {
             req.body.attributes.forEach(attr => {
                 if(!user.attributes || !user.attributes.map(e => e.name).includes(attr.name)){
                     user.attributes.push(attr)
+                } else {
+                    var found = user.attributes.find(a => a.name == attr.name);
+                    if(found){
+                        found.value = attr.value;
+                    }
                 }
             });
         }
@@ -80,27 +105,22 @@ router.post('/:id/address', async (req, res) => {
     }
 })
 
-router.get('/search', async (req, res) => {
+router.post('/search', async (req, res) => {
     const criteria = req.body.criteria;
     var users;
     try{
         if(criteria == null) {
+            users = await userModel.find()
+             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "googleId": 0, "__v": 0 })
+             .limit(10);
+        } else {
             users = await userModel.find({ 
                 $or: [
                     { name: { $regex: `.*${criteria}.*`, $options: "i" } },
                     { nickname: { $regex: `.*${criteria}.*`, $options: "i" } }
                 ]
              })
-             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "facebookId": 0, "__v": 0 })
-             .limit(10);
-        } else {
-            const users = await userModel.find({ 
-                $or: [
-                    { name: { $regex: `.*${criteria}.*`, $options: "i" } },
-                    { nickname: { $regex: `.*${criteria}.*`, $options: "i" } }
-                ]
-             })
-             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "facebookId": 0, "__v": 0 })
+             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "googleId": 0, "__v": 0 })
              .limit(10);
         }
         res.json({ data: users });
@@ -136,7 +156,7 @@ router.get('/:id/friends/count', async (req, res) => {
         const user = await userModel.findById(req.params.id);
         if(!user) res.status(404).json({ message: 'user_not_found' })
         const friendsCount = await friendModel.countDocuments({ recipient: user._id });
-        res.json({ data: friendsCount });
+        res.json({ data: { count: friendsCount } });
     } catch (error) {
         catchObjectIdError(error, 
             () => res.status(404).json({ message: 'user_not_found' }) , 
@@ -151,7 +171,7 @@ router.get('/:id/matches/count', async (req, res) => {
         const user = await userModel.findById(req.params.id);
         if(!user) res.status(404).json({ message: 'user_not_found' })
         const matchCount = await matchModel.countDocuments({ organizer: user._id });
-        res.json({ data: matchCount });
+        res.json({ data: { count: matchCount } });
     } catch (error) {
         catchObjectIdError(error, 
             () => res.status(404).json({ message: 'user_not_found' }) , 

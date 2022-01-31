@@ -49,7 +49,7 @@ const userSchema = mongoose.Schema({
         type: String,
         required: false
     },
-    facebookId: {
+    googleId: {
         type: String,
         required: false
     },
