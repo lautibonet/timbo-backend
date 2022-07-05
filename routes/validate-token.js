@@ -1,14 +1,15 @@
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const responseUtils = require('../utils/response-utils');
 
 const validateToken = (req, res, next) => {
     const token = req.header('Authorization')
-    if (!token) return res.status(401).json({ error: 'unauthorized' })
+    if (!token) return responseUtils.setUnauthorizedError(res);
     try {
         const verified = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         req.user = verified;
         next();
     } catch (error) {
-        res.status(400).json({error: 'invalid_token'})
+        responseUtils.setInvalidTokenError(res);
     }
 }
 

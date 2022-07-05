@@ -13,11 +13,10 @@ const matchSchema = mongoose.Schema({
     startTime: Date,
     fullAddress: String,
     location: {
-        type: String,
-        coordinates: {
-            type: [],
-            default: undefined
-        }
+        type: {
+            type: String
+        },
+        coordinates: [Number]
     },
     status: {
         type: Number,

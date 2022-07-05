@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const userModel = require('../models/User');
 const friendModel = require('../models/Friend');
+const responseUtils = require('../utils/response-utils');
+const validations = require('../utils/validations');
 const catchObjectIdError = require('../utils/catchObjectIdError');
 
 ///////// APIS /////////
@@ -29,7 +31,7 @@ router.post('/', getRequesterAndRecipient, async (req, res) => {
         )
         res.json({ data: docA })
     } catch (error) {
-        res.staus(500).json({ error })
+        responseUtils.setServerError(res, error);
     }
 })
 
@@ -47,7 +49,7 @@ router.post('/accept', getRequesterAndRecipient, async (req, res) => {
         )
         res.json({ data: requester })
     } catch (error) {
-        res.status(500).json({ error })
+        responseUtils.setServerError(res, error);
     }
 })
 
@@ -74,31 +76,42 @@ router.post('/reject', getRequesterAndRecipient, async (req, res) => {
         res.sendStatus(200);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error })
+        responseUtils.setServerError(res, error);
     }
 })
 
 ///////// FUNCTIONS /////////
 
 async function getRequesterAndRecipient(req, res, next) {
+    const { error } = validations.friendRequest.validate(req.body);
+    if(error) return responseUtils.setJoiValidationError(req, error);
     const requesterId = req.body.requesterId;
-    if(requesterId == null) return res.status(400).json({ error: 'requesterId_required' })
     const recipientId = req.body.recipientId;
-    if(recipientId == null) return res.status(400).json({ error: 'recipientId_required' })
+    let requester, recipient;
+    
     try{
-        const requester = await userModel.findById(requesterId);
-        if(requester == null) return res.status(400).json({ error: 'requester_not_found' })
-        const recipient = await userModel.findById(recipientId);
-        if(recipient == null) return res.status(400).json({ error: 'recipient_not_found' })
-        req.requester = requester;
-        req.recipient = recipient;
-        next();
+        requester = await userModel.findById(requesterId);
+        if(requester == null) return responseUtils.setRequesterNotFound(res, requesterId);
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res, requesterId), 
+            () => responseUtils.setServerError(res)
         );
     }
+
+    try {
+        recipient = await userModel.findById(recipientId);
+        if(recipient == null) return responseUtils.setRecipientNotFound(res, recipientId);
+    } catch (error) {
+        catchObjectIdError(error, 
+            () => responseUtils.setUserNotFound(res, recipientId), 
+            () => responseUtils.setServerError(res)
+        );
+    }
+
+    req.requester = requester;
+    req.recipient = recipient;
+    next();
 }
 
 module.exports = router;

@@ -1,31 +1,10 @@
 const router = require('express').Router();
-const joi = require('joi');
 const matchModel = require('../models/Match');
 const userModel = require('../models/User');
 const friendModel = require('../models/Friend');
+const validations = require('../utils/validations');
+const responseUtils = require('../utils/response-utils');
 const catchObjectIdError = require('../utils/catchObjectIdError');
-
-const schemaCreateMatch = joi.object({
-    organizer: joi.string().required(),
-    name: joi.string().allow(null, ''),
-    createdOn: joi.string().isoDate().required(),
-    startTime: joi.string().isoDate().allow(null),
-    fullAddress: joi.string().allow(null),
-    latitude: joi.number().allow(null),
-    longitude: joi.number().allow(null),
-    status: joi.number().allow(0,1,2).required(),
-    totalPlayers: joi.number().min(0).required(),
-    privacy: joi.number().allow(1,2,3).required(),
-    price: joi.number().min(0).allow(null),
-    players: joi.array().allow(null)
-})
-
-const schemaSearch = joi.object({
-    userId: joi.string().required(),
-    lat: joi.number().min(-90).max(90).required(),
-    lon: joi.number().min(-180).max(180).required(),
-    dis: joi.number().min(0).required()
-})
 
 const buildMatch = (body) => {
     var location;
@@ -51,44 +30,44 @@ const buildMatch = (body) => {
 }
 
 router.post('/', async (req, res) => {
-    const {error} = schemaCreateMatch.validate(req.body);
-    if(error) {
-        console.log('validation error: ', error);
-        return res.status(400).json({ error: error.details[0].message })
-    }
+    const {error} = validations.createMatch.validate(req.body);
+    if(error) return responseUtils.setJoiValidationError(res, error);
+    const organizerId = req.body.organizer;
     try{
-        const user = await userModel.findById(req.body.organizer);
-        if(user == null) return res.status(400).json({ error: "user_not_found" })
+        const user = await userModel.findById(organizerId);
+        if(!user) return responseUtils.setUserNotFound(res, organizerId);
         const match = new matchModel(buildMatch(req.body));
         var savedMatch = await match.save();
         savedMatch = await matchModel.populate(savedMatch, {path: 'organizer', select: 'name nickname imageUrl attributes'});
         res.json({ data: savedMatch })
     } catch (error) {
-        console.log(error);
-        res.status(400).json({ error });
+        responseUtils.setServerError(res, error);
     }
 })
 
 router.get('/:id', async (req, res) => {
-    if (req.params.id == null) return res.status(400).json({ error: "match_id_required" });
+    const { error } = validations.getMatch(req.params);
+    if (error) return responseUtils.setJoiValidationError(res, error);
+    const matchId = req.params.id;
     try{
-        const match = await matchModel.findById(req.params.id);
-        if(match == null) return res.status(404).json({ error: "match_not_found" })
+        const match = await matchModel.findById(matchId);
+        if(match == null) return responseUtils.setMatchNotFound(res, matchId);
         res.json({ data: match })
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'match_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setMatchNotFound(res, matchId), 
+            () => responseUtils.setServerError(error)
         );
     }
 })
 
 router.post('/search', async (req, res) => {
-    const {error} = schemaSearch.validate(req.body);
-    if(error) return res.status(400).json({ error: error.details[0].message })
+    const { error } = validations.searchMatch.validate(req.body);
+    if(error) return responseUtils.setJoiValidationError(res, error);
+    const userId = req.body.userId;
     try{
-        const user = await userModel.findById(req.body.userId);
-        if(user == null) return res.status(404).json({ error: "user_not_found" })
+        const user = await userModel.findById(userId);
+        if(!user) return responseUtils.setUserNotFound(res, userId);
         const friends = (await friendModel.find({ recipient: user._id }, 'requester -_id')).map(f => f.requester);
         const matches = await matchModel.find({ $or: [
             { privacy: 1 },
@@ -107,8 +86,8 @@ router.post('/search', async (req, res) => {
     } catch (error) {
         console.log(error);
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'match_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res, userId), 
+            () => responseUtils.setServerError(res, error)
         );
     }
 })

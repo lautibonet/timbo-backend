@@ -1,10 +1,6 @@
 const router = require('express').Router();
 const footballTeamModel = require('../models/FootballTeam');
-const joi = require('joi');
-
-const schemaFootballTeam = joi.object({
-    name: joi.string().required()
-})
+const validations = require('../utils/validations');
 
 router.get('/', async (req, res) => {
     try{
@@ -16,7 +12,7 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-    const { error } = schemaFootballTeam.validate(req.body);
+    const { error } = validations.footballTeam.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message })
     try{
         const name = req.body.name;

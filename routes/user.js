@@ -2,61 +2,59 @@ const router = require('express').Router();
 const userModel = require('../models/User');
 const friendModel = require('../models/Friend');
 const matchModel = require('../models/Match');
+const validations = require('../utils/validations');
+const responseUtils = require('../utils/response-utils');
 const catchObjectIdError = require('../utils/catchObjectIdError');
-const joi = require('joi');
-
-const schemaAddress = joi.object({
-    fullAddress: joi.string().required(),
-    latitude: joi.number().required(),
-    longitude: joi.number().required(),
-    radius: joi.number().required()
-})
 
 router.get('/', async (req, res) => {
-    try{
-        const users = await userModel.find();
-        res.json({ data: users });
-    } catch (error) {
-        res.status(500).json({ error });
-    }
+    return responseUtils.setRequiredParamError(res, 'id');
+    // try{
+    //     const users = await userModel.find();
+    //     res.json({ data: users });
+    // } catch (error) {
+    //     responseUtils.setServerError(res, error);
+    // }
 })
 
 router.get('/:id', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id;
     try{
-        const user = await userModel.findById(req.params.id);
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUserNotFound(res);
         res.json({ data: user });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res,userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.put('/:googleId/imageUrl', async (req, res) => {
-    if(req.params.googleId == null) return res.status(400).json({error: 'googleId_required'})
-    if(req.body.imageUrl == null) return res.status(400).json({error: 'imageUrl_required'})
+    if(req.params.googleId == null) return responseUtils.setRequiredParamError(res, 'googleId');
+    if(req.body.imageUrl == null) return responseUtils.setRequiredParamError(res, 'imageUrl');
+    const googleId = req.params.googleId;
     try{
-        const user = await userModel.findOne({ googleId: req.params.googleId });
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findOne({ googleId });
+        if(!user) responseUtils.setUserNotFound(res);
         user.imageUrl = req.body.imageUrl;
         const savedUser = await user.save();
         res.json({ data: {user:savedUser} });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res, googleId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.patch('/:id', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id;
     try{
-        const user = await userModel.findById(req.params.id);
-        console.log(req.body);
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUserNotFound(res);
         if(req.body.name != null && req.body.name != user.name) user.name = req.body.name
         if(req.body.nickname != null && req.body.nickname != user.nickname) user.nickname = req.body.nickname
         if(req.body.birthday != null && req.body.birthday != user.birthday) user.birthday = req.body.birthday
@@ -69,8 +67,7 @@ router.patch('/:id', async (req, res) => {
                 if(!user.attributes || !user.attributes.map(e => e.name).includes(attr.name)){
                     user.attributes.push(attr)
                 } else {
-                    var found = user.attributes.find(a => a.name == attr.name);
-                    if(found){
+                    if(user.attributes.find(a => a.name == attr.name)){
                         found.value = attr.value;
                     }
                 }
@@ -81,26 +78,28 @@ router.patch('/:id', async (req, res) => {
     } catch (error) {
         console.log(error);
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res, userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.post('/:id/address', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
-    if(req.body.address == null) return res.status(400).json({error: 'address_required'})
-    const { error } = schemaAddress.validate(req.body.address);
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    if(req.body.address == null) return responseUtils.setRequiredParamError(res, 'address');
+    const { error } = validations.address.validate(req.body.address);
     if (error) return res.status(400).json({ error: error.details[0].message });
+    const userId = req.params.id;
     try{
-        const user = await userModel.findById(req.params.id);
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUserNotFound(res);
         user.addresses.push(req.body.address);
         const savedUser = await user.save();
         res.json({ data: { user:savedUser } });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res,userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
@@ -128,17 +127,18 @@ router.post('/search', async (req, res) => {
         res.json({ data: users });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUserNotFound(res, requesterUserId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.get('/:id/friends', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id;
     try{
-        const user = await userModel.findById(req.params.id);
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUserNotFound(res);
         const friends = await friendModel.find({ recipient: user._id }, 'requester -_id').populate({
             path: 'requester' ,
             select: 'name nickname email imageUrl attributes',
@@ -146,47 +146,50 @@ router.get('/:id/friends', async (req, res) => {
         res.json({ data: friends.map(f => f.requester) });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUerNotFound(res, userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.get('/:id/friends/count', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id;
     try{
-        const user = await userModel.findById(req.params.id);
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUerNotFound(res);
         const friendsCount = await friendModel.countDocuments({ recipient: user._id });
         res.json({ data: { count: friendsCount } });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUerNotFound(res,userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.get('/:id/matches/count', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id;
     try {
-        const user = await userModel.findById(req.params.id);
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUerNotFound(res);
         const matchCount = await matchModel.countDocuments({ organizer: user._id });
         res.json({ data: { count: matchCount } });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUerNotFound(res, userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 router.get('/:id/matches', async (req, res) => {
-    if(req.params.id == null) return res.status(400).json({error: 'userId_required'})
+    if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
+    const userId = req.params.id
     try {
-        const user = await userModel.findById(req.params.id);
-        if(!user) res.status(404).json({ message: 'user_not_found' })
+        const user = await userModel.findById(userId);
+        if(!user) responseUtils.setUerNotFound(res);
         const matches = await matchModel
             .find({ organizer: user._id })
             .select({"__v": 0})
@@ -194,10 +197,11 @@ router.get('/:id/matches', async (req, res) => {
         res.json({ data: matches });
     } catch (error) {
         catchObjectIdError(error, 
-            () => res.status(404).json({ message: 'user_not_found' }) , 
-            () => res.status(500).json({ error })
+            () => responseUtils.setUerNotFound(res,userId),
+            () => responseUtils.setServerError(res, error)
         );
     }
 })
 
 module.exports = router;
+
