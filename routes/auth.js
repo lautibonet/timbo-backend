@@ -96,12 +96,16 @@ router.post('/token', async (req, res) => {
     })
 })
 
-router.post('/login/google', async (req, res) => {
-    const { error } = validations.userGoogleLogin.validate(req.body);
+router.post('/login/social', async (req, res) => {
+    const { error } = validations.userSocialLogin.validate(req.body);
     if(error) return responseUtils.setJoiValidationError(res, error);
     try {
-        const user = await userModel.findOne({ googleId, email });
-        if(!user) return responseUtils.setUserNotFound(res, googleId);
+        const socialCriteria = {
+            type: req.body.type,
+            id: req.body.id
+        }
+        const user = await userModel.findOne({ 'socials': {$elemMatch: {type: req.body.type, id: req.body.id}}, email: req.body.email});
+        if(!user) return responseUtils.setUserBySocialNotFound(res, req.body.id);
         const accessToken = buildAccessToken(user);
         const refreshToken = buildRefreshToken(user);
         const token = await TokenModel.findOneAndUpdate({ user: user._id }, { refreshToken }, { new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false  });
@@ -109,6 +113,7 @@ router.post('/login/google', async (req, res) => {
             data: { userId: user._id, accessToken, refreshToken }
         })
     } catch (error) {
+        console.log(error);
         return responseUtils.setServerError(res, error);
     }
 })

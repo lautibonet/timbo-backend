@@ -31,10 +31,12 @@ const userSchema = mongoose.Schema({
         type: String,
         required: false
     },
-    googleId: {
-        type: String,
-        required: false
-    },
+    socials: [
+        {
+            type: String,
+            id: String
+        }
+    ],
     imageUrl: {
         type: String,
         required: false

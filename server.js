@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyparser = require('body-parser');
+const cors = require('cors');
 require('dotenv').config();
 
 const server = express();
@@ -20,6 +21,7 @@ mongoose.set('useCreateIndex', true);
 
 // routes import
 const verifyToken = require('./routes/validate-token');
+const authCheckRoutes = require('./routes/auth-check');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const matchRoutes = require('./routes/match');
@@ -28,6 +30,7 @@ const footballTeamRoutes = require('./routes/football-team');
 
 //route middlewares
 server.use('/api/auth', authRoutes);
+server.use('/api/auth-check', verifyToken, authCheckRoutes);
 server.use('/api/user', userRoutes);
 server.use('/api/match', matchRoutes);
 server.use('/api/friend', friendRoutes);

@@ -24,9 +24,10 @@ const userLogin = joi.object({
     password: joi.string().min(8).max(1024).required()
 })
 
-const userGoogleLogin = joi.object({
+const userSocialLogin = joi.object({
+    type: joi.string().max(255).required(),
     email: joi.string().min(6).max(255).required().email(),
-    googleId: joi.string().max(255).required()
+    id: joi.string().max(255).required()
 })
 
 const footballTeam = joi.object({
@@ -64,4 +65,4 @@ const getMatch = joi.object({
     id: joi.string().required()
 })
 
-module.exports = { address, userRegistration, userLogin, userGoogleLogin, footballTeam, friendRequest, createMatch, searchMatch, getMatch };
+module.exports = { address, userRegistration, userLogin, userSocialLogin, footballTeam, friendRequest, createMatch, searchMatch, getMatch };

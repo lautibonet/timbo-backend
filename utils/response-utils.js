@@ -18,6 +18,9 @@ module.exports = {
     setUserNotFound: (res, id) => { 
         res.status(404).json({ error: new Ex('USER_NOT_FOUND', `User with id ${id} was not found`) });
     },
+    setUserBySocialNotFound: (res, id) => { 
+        res.status(404).json({ error: new Ex('USER_NOT_FOUND', `User with social id ${id} was not found`) });
+    },
     setRequesterNotFound: (res, id) => { 
         res.status(404).json({ error: new Ex('REQUESTER_NOT_FOUND', `User with id ${id} was not found`) });
     },
