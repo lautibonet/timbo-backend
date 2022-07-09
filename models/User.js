@@ -13,7 +13,7 @@ const userSchema = mongoose.Schema({
     },
     nickname: {
         type: String,
-        required: true
+        required: false
     },
     email: {
         type: String,
