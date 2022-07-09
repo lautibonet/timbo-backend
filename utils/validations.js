@@ -8,13 +8,11 @@ const address = joi.object({
 })
 
 const userRegistration = joi.object({
-    name: joi.string().min(6).max(255).required(),
-    nickname: joi.string().required(),
+    name: joi.string().max(255).required(),
     email: joi.string().min(6).max(255).required().email(),
     password: joi.string().min(8).max(1024).required(),
-    enabled: joi.boolean(),
+    enabled: joi.boolean().default(true),
     phoneNumber: joi.string().allow(null).allow(''),
-    googleId: joi.string().allow(null),
     imageUrl: joi.string().allow(null),
     birthday: joi.string().isoDate().allow(null)
 })
