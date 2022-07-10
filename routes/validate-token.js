@@ -9,7 +9,7 @@ const validateToken = (req, res, next) => {
         req.user = verified;
         next();
     } catch (error) {
-        responseUtils.setInvalidTokenError(res);
+        responseUtils.setUnauthorizedError(res);
     }
 }
 

@@ -6,6 +6,31 @@ const validations = require('../utils/validations');
 const responseUtils = require('../utils/response-utils');
 const catchObjectIdError = require('../utils/catchObjectIdError');
 
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, './static/uploads')
+    },
+    filename: function(req, file, cb) {
+        cb(null, req.params.id + file.originalname)
+    }
+})
+
+const fileFilter = (req, file, cb) => {
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png') {
+        cb(null, true);
+    } else {
+        cb(new Error('Extension de imagen no permitido'), false);
+    }
+}
+
+const fileHandler = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 1024 * 1024 * 5 }
+});
+
 router.get('/', async (req, res) => {
     return responseUtils.setRequiredParamError(res, 'id');
     // try{
@@ -20,7 +45,7 @@ router.get('/:id', async (req, res) => {
     if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
     const userId = req.params.id;
     try{
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(userId).select({ "addresses": 0, "password": 0, "socials": 0, "__v": 0 });
         if(!user) responseUtils.setUserNotFound(res);
         res.json({ data: user });
     } catch (error) {
@@ -31,41 +56,22 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-router.put('/:googleId/imageUrl', async (req, res) => {
-    if(req.params.googleId == null) return responseUtils.setRequiredParamError(res, 'googleId');
-    if(req.body.imageUrl == null) return responseUtils.setRequiredParamError(res, 'imageUrl');
-    const googleId = req.params.googleId;
-    try{
-        const user = await userModel.findOne({ googleId });
-        if(!user) responseUtils.setUserNotFound(res);
-        user.imageUrl = req.body.imageUrl;
-        const savedUser = await user.save();
-        res.json({ data: {user:savedUser} });
-    } catch (error) {
-        catchObjectIdError(error, 
-            () => responseUtils.setUserNotFound(res, googleId),
-            () => responseUtils.setServerError(res, error)
-        );
-    }
-})
-
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', fileHandler.single('profilePicture'), async (req, res) => {
     if(req.params.id == null) return responseUtils.setRequiredParamError(res, 'id');
     const userId = req.params.id;
     try{
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(userId).select({ "friends": 0, "addresses": 0, "password": 0, "socials": 0, "__v": 0 });
         if(!user) responseUtils.setUserNotFound(res);
-        if(req.body.name != null && req.body.name != user.name) user.name = req.body.name
-        if(req.body.nickname != null && req.body.nickname != user.nickname) user.nickname = req.body.nickname
-        if(req.body.birthday != null && req.body.birthday != user.birthday) user.birthday = req.body.birthday
-        if(req.body.imageUrl != null && req.body.imageUrl != user.imageUrl) user.imageUrl = req.body.imageUrl
-        if(req.body.email != null && req.body.email != user.email) user.email = req.body.email
-        if(req.body.enabled != null && req.body.enabled != user.enabled) user.enabled = req.body.enabled
-        if(req.body.phoneNumber != null && req.body.phoneNumber != user.phoneNumber) user.phoneNumber = req.body.phoneNumber
+        if(req.body.name != null && req.body.name != user.name) user.name = req.body.name;
+        if(req.body.nickname != null && req.body.nickname != user.nickname) user.nickname = req.body.nickname;
+        if(req.body.birthday != null && req.body.birthday != user.birthday) user.birthday = req.body.birthday;
+        if(req.body.enabled != null && req.body.enabled != user.enabled) user.enabled = req.body.enabled;
+        if(req.body.phoneNumber != null && req.body.phoneNumber != user.phoneNumber) user.phoneNumber = req.body.phoneNumber;
+        if(req.file) user.imageUrl = req.file.path;
         if(req.body.attributes != null) {
             req.body.attributes.forEach(attr => {
                 if(!user.attributes || !user.attributes.map(e => e.name).includes(attr.name)){
-                    user.attributes.push(attr)
+                    user.attributes.push(attr);
                 } else {
                     if(user.attributes.find(a => a.name == attr.name)){
                         found.value = attr.value;
@@ -111,7 +117,7 @@ router.post('/search', async (req, res) => {
     try{
         if(criteria == null) {
             users = await userModel.find()
-             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "googleId": 0, "__v": 0 })
+             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "socials": 0, "__v": 0 })
              .limit(10);
         } else {
             users = await userModel.find({ 
@@ -121,7 +127,7 @@ router.post('/search', async (req, res) => {
                 ],
                 _id: { $ne: requesterUserId }
              })
-             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "googleId": 0, "__v": 0 })
+             .select({ "addresses": 0, "password": 0, "phoneNumber": 0, "socials": 0, "__v": 0 })
              .limit(10);
         }
         res.json({ data: users });

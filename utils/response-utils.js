@@ -9,9 +9,6 @@ module.exports = {
     setUnauthorizedError: (res) => { 
         res.status(401).json({ error: new Ex('UNAUTHORIZED', '') });
     },
-    setInvalidTokenError: (res) => { 
-        res.status(400).json({ error: new Ex('INVALID_TOKEN', '') });
-    },
     setForbiddenError: (res) => { 
         res.status(403).json({ error: new Ex('FORBIDDEN', '') });
     },

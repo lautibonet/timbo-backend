@@ -33,7 +33,9 @@ const userSchema = mongoose.Schema({
     },
     socials: [
         {
-            type: String,
+            type: {
+                type: { type: String }
+            },
             id: String
         }
     ],

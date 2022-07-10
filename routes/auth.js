@@ -25,14 +25,14 @@ const buildAccessToken = (user) => {
     return jwt.sign({
         _id: user._id,
         name: user.name
-    }, process.env.ACCESS_TOKEN_SECRET, {expiresIn: 60});
+    }, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30m'});
 }
 
 const buildRefreshToken = (user) => {
     return jwt.sign({
         _id: user._id,
         name: user.name
-    }, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '6h'});
+    }, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '24h'});
 }
 
 router.post('/register', async (req, res) => {

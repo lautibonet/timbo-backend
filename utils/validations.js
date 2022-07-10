@@ -13,7 +13,6 @@ const userRegistration = joi.object({
     password: joi.string().min(8).max(1024).required(),
     enabled: joi.boolean().default(true),
     phoneNumber: joi.string().allow(null).allow(''),
-    imageUrl: joi.string().allow(null),
     birthday: joi.string().isoDate().allow(null)
 })
 

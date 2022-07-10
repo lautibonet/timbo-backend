@@ -17,7 +17,6 @@ mongoose.connect(uri,
 )
 .then(() => console.log('Base de datos conectada'))
 .catch(e => console.log('error db:', e))
-mongoose.set('useCreateIndex', true);
 
 // routes import
 const verifyToken = require('./routes/validate-token');
@@ -29,6 +28,7 @@ const friendRoutes = require('./routes/friend');
 const footballTeamRoutes = require('./routes/football-team');
 
 //route middlewares
+server.use('/static/uploads', express.static('static/uploads'));
 server.use('/api/auth', authRoutes);
 server.use('/api/auth-check', verifyToken, authCheckRoutes);
 server.use('/api/user', userRoutes);
