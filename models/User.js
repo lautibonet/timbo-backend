@@ -47,6 +47,10 @@ const userSchema = mongoose.Schema({
         type: Date,
         required: false
     },
+    gender: {
+        type: String,
+        required: false
+    },
     attributes: [attributeSchema],
     addresses: [addressSchema],
     friends: [{

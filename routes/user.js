@@ -62,14 +62,16 @@ router.patch('/:id', fileHandler.single('profilePicture'), async (req, res) => {
     try{
         const user = await userModel.findById(userId).select({ "friends": 0, "addresses": 0, "password": 0, "socials": 0, "__v": 0 });
         if(!user) responseUtils.setUserNotFound(res);
-        if(req.body.name != null && req.body.name != user.name) user.name = req.body.name;
-        if(req.body.nickname != null && req.body.nickname != user.nickname) user.nickname = req.body.nickname;
-        if(req.body.birthday != null && req.body.birthday != user.birthday) user.birthday = req.body.birthday;
-        if(req.body.enabled != null && req.body.enabled != user.enabled) user.enabled = req.body.enabled;
-        if(req.body.phoneNumber != null && req.body.phoneNumber != user.phoneNumber) user.phoneNumber = req.body.phoneNumber;
+        const userRequest = req.body.user;
+        if(userRequest.name != null && userRequest.name !== user.name) user.name = userRequest.name;
+        if(userRequest.nickname != null && userRequest.nickname !== user.nickname) user.nickname = userRequest.nickname;
+        if(userRequest.birthday != null && userRequest.birthday !== user.birthday) user.birthday = userRequest.birthday;
+        if(userRequest.enabled != null && userRequest.enabled !== user.enabled) user.enabled = userRequest.enabled;
+        if(userRequest.gender != null && userRequest.gender !== user.gender) user.gender = userRequest.gender;
+        if(userRequest.phoneNumber != null && userRequest.phoneNumber !== user.phoneNumber) user.phoneNumber = userRequest.phoneNumber;
         if(req.file) user.imageUrl = req.file.path;
-        if(req.body.attributes != null) {
-            req.body.attributes.forEach(attr => {
+        if(userRequest.attributes != null) {
+            userRequest.attributes.forEach(attr => {
                 if(!user.attributes || !user.attributes.map(e => e.name).includes(attr.name)){
                     user.attributes.push(attr);
                 } else {
