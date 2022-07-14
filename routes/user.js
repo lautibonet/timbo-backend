@@ -62,7 +62,7 @@ router.patch('/:id', fileHandler.single('profilePicture'), async (req, res) => {
     try{
         const user = await userModel.findById(userId).select({ "friends": 0, "addresses": 0, "password": 0, "socials": 0, "__v": 0 });
         if(!user) responseUtils.setUserNotFound(res);
-        const userRequest = req.body.user;
+        const userRequest = req.body.user ? JSON.parse(req.body.user) : {};
         if(userRequest.name != null && userRequest.name !== user.name) user.name = userRequest.name;
         if(userRequest.nickname != null && userRequest.nickname !== user.nickname) user.nickname = userRequest.nickname;
         if(userRequest.birthday != null && userRequest.birthday !== user.birthday) user.birthday = userRequest.birthday;
