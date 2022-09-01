@@ -16,6 +16,10 @@ const addressSchema = mongoose.Schema({
     radius: {
         type: Number,
         required: true
+    },
+    default: {
+        type: Boolean,
+        required: true
     }
 }, {_id: false});
 

@@ -4,7 +4,8 @@ const address = joi.object({
     fullAddress: joi.string().required(),
     latitude: joi.number().required(),
     longitude: joi.number().required(),
-    radius: joi.number().required()
+    radius: joi.number().required(),
+    default: joi.bool().required()
 })
 
 const userRegistration = joi.object({
