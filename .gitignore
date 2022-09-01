@@ -49,3 +49,7 @@ Thumbs.db
 *.wmv
 
 static/uploads/
+
+selfsigned.crt
+selfsigned.key
+.env
